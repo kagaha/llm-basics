@@ -18,21 +18,49 @@ print(response);
 # ---- 3. Extract just the text ----
 print(response.text)
 
-# ---- 4. Multi-turn conversation (passing a list of messages) ----
+# ---- 4. Multi-turn conversation (stateful conversation) Passing the previous interaction ID to the next interaction ----
 # First Iteration
-intrecation1 = client.interactions.create(
+interaction1 = client.interactions.create(
     model="gemini-3.6-flash",
     input="My name is Ruthik"
 );
-print(intrecation1.output_text)
+print(interaction1.output_text)
 ## Second Iteration
 result = client.interactions.create(
     model="gemini-3.6-flash",
     input="What is my name?",
-    previous_interaction_id=intrecation1.id
+    previous_interaction_id=interaction1.id
+);
+print(result.output_text)
+
+# --- Stateless conversation (without passing the previous interaction ID)  Managing the
+# conversation history by ourselves through DB and passing the history to the Model  ----
+history = [
+    {"role": "user", "content": "My name is Ruthik"},
+    {"role": "assistant", "content": "Hello Ruthik! How can I assist you today?"}
+];
+
+# Get user input
+user_input = input("You: ")
+
+# Append the user input to the conversation history
+history.append({"role": "user", "content": user_input})
+
+# Convert history into a text prompt
+conversation = "\n".join(
+    f"{message['role']}: {message['content']}"
+    for message in history
+)
+
+response = client.interactions.create(
+    model="gemini-3.6-flash",
+    input=conversation
 );
 
-# print(result.output_text)
+print("Assistant:" , response.output_text)
+# Append the assistant's response to the conversation history
+history.append({"role": "assistant", "content": response.output_text})
+
 
 # ---- 5. Now add system prompt, temperature, max_tokens ----
 result = client.interactions.create(
